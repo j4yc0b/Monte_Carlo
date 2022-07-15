@@ -16,14 +16,16 @@ class Plot:
 
         format = '1Y, 3M' 
         self.file_name = file_name
+        self.time_frame = time_frame
         #number of portfolios (/number of guesses)
         self.rounds = rounds
-        end = datetime.today().date()
+        self.end = datetime.today().date()
 
-        if time_frame[-1].upper() == 'Y':
-            vuosi = end.year-int(time_frame[:-1])
-            start = pd.to_datetime(f"{str(vuosi)}-{end.month}-{end.day}").date()
+        if self.time_frame[-1].upper() == 'Y':
+            self.vuosi = self.end.year-int(self.time_frame[:-1])
+            self.start = pd.to_datetime(f"{str(self.vuosi)}-{self.end.month}-{self.end.day}").date()
         else:
+            # use timedelta
             pass
 
     def _read_data(self):
@@ -88,8 +90,6 @@ class Plot:
         for n in range(len(input.columns)):
             txt += f"{input.columns[n]}: {str(round(opt_weight[n]*100))}% "
 
-        print(txt)
-
         #Figure
         plt.figure(figsize=(16,12))
         plt.scatter(vol_arr,ret_arr,c=SR_arr,cmap='plasma')
@@ -103,10 +103,11 @@ class Plot:
 
         all_weight[SR_arr.argmax(),:] 
 
+        print(txt)
         print(None)
 
 
 # if __name__ == "main":
-inst = Plot("input.csv", "1y", 500)
+inst = Plot("input.csv", "3y", 1000)
 inst.guessing()
 
