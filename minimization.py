@@ -1,13 +1,13 @@
-
-
+  
 import pandas as pd
 import pandas_datareader.data as web
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
+import os
 from scipy.optimize import minimize
-
+from pandas.errors import ParserError
 
 class Plot():
     # Set the dates for data and choose stocks
@@ -19,75 +19,12 @@ class Plot():
     START = pd.to_datetime(f"{str(vuosi)}-{END.month}-{END.day}").date()
     LST = ['META','AMZN','GOOG','MSFT']
     
-    def __init__(self, rounds):
+    def __init__(self, file_name, rounds):
         # self.time_frame = time_frame
-
+        self.file_name = file_name
         #number of portfolios (/number of guesses)
         self.rounds = rounds
-
-    def guessing(self):        
-        # By randomly guessing the weights
-
-        closing  = []
-
-        for i in range(len(self.LST)):
-            closing.append(web.DataReader(self.LST[i],'yahoo', self.START, self.END)['Adj Close'])
-
-        df = pd.concat(closing,axis=1)
-        df.columns = self.LST
-
-        log_ret = np.log(df/df.shift(1))
-        all_weight = np.zeros((self.rounds,len(df.columns)))
-        ret_arr = np.zeros(self.rounds)
-        vol_arr = np.zeros(self.rounds)
-        SR_arr = np.zeros(self.rounds)
-
-        for ind in range(self.rounds):
-
-            #random weights
-            weight = np.array(np.random.random(len(self.LST)))
-            #rebalancing
-            weight = weight/np.sum(weight)
-            #save the weights
-            all_weight[ind,:] = weight
-            # expected return
-            ret_arr[ind] = np.sum ((log_ret.mean()*weight)*252)
-            
-            # expected volatility
-            vol_arr[ind] = np.sqrt(np.dot(weight.T,np.dot(log_ret.cov()*252,weight)))
-            
-            # expected sharpe
-            SR_arr[ind] = ret_arr[ind]/vol_arr[ind]
-            
-        SR_arr.max()
-        #get the index location of the max sharpe
-        SR_arr.argmax()
-
-        max_sr_ret = ret_arr[SR_arr.argmax()]
-        max_sr_vol = vol_arr[SR_arr.argmax()]
-        opt_weight = all_weight[SR_arr.argmax()]
-
-        txt = "Optimal weights: "
-        for n in range(len(self.LST)):
-            txt += f"{self.LST[n]}: {str(round(opt_weight[n]*100))}% "
-
-        print(txt)
-
-        #Figure
-        plt.figure(figsize=(16,12))
-        plt.scatter(vol_arr,ret_arr,c=SR_arr,cmap='plasma')
-        plt.colorbar(label='Sharpe Ratio')
-        plt.xlabel('Volatility')
-        plt.ylabel('Return')
-        plt.title(txt)
-
-        # marking the best Sharpe
-        plt.scatter(max_sr_vol,max_sr_ret,c='red',s=50,edgecolors='black')
-
-        all_weight[SR_arr.argmax(),:] 
-
-        print(None)
-
+  
     def optimization(self, df):
         #With the optimization tool
 
@@ -160,9 +97,3 @@ class Plot():
         plt.plot(frontier_vol,frontier_y,'g--' )
 
         print(None)
-
-
-# if __name__ == "main":
-inst = Plot(1000)
-inst.guessing()
-
