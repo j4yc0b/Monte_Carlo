@@ -6,27 +6,38 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from pandas.errors import ParserError
+from pandas_datareader._utils import RemoteDataError
 import argparse
 
 
 class MonteCarlo:
-    # Set the dates for data and choose stocks
+    """ Class for reading in the provided ticker data, running the simulation and
+    outputting the results. 
+    :param file_name: The file path of the csv-file.
+    :param time_frame: The time frame of the analysis. Either in years (1Y) or in months (6M).
+    :param num_guess: Number of guesses for the optimal porfolio.
+    :param output: The output file name with extension.
+    """
     
     def __init__(self, file_name, time_frame, num_guess, output):
 
         self.file_name = file_name
         self.time_frame = time_frame
-        #number of portfolios (/number of guesses)
         self.num_guess = num_guess
-        # self.output = output
         self.end = datetime.today().date()
 
         if self.time_frame[-1].upper() == 'Y':
             self.start = self.end - timedelta(days = int(self.time_frame[:-1])*365)
-        else:
+        elif self.time_frame[-1].upper() == 'M':
             self.start = self.end - timedelta(days = int(self.time_frame[:-1])*30)
+        else:
+            raise Exception("Provided time frame is incorrect. Please use 'M' for months and 'Y for years.'")
 
     def _read_data(self):
+        """
+        Reading in the ticker data as a DataFrame and checking the ticker names.
+        :return: DataFrame object with the tickers.
+        """
 
         csv_delimiter = ','
         if os.path.exists(self.file_name):
@@ -41,14 +52,22 @@ class MonteCarlo:
 
         return input
 
-    def run(self):        
-        # By randomly guessing the weights
+    def main(self):        
+        """
+        Starting with the input DataFrame and using Pandas DataReader to get the adjusted closing prices 
+        of the provided stocks and running the simulation, and eventually calling the plot function 
+        to plot the results.
+        :return: An instance of the plot function with arrays of the axels and the optimal weights as the title.
+        """
 
         input = self._read_data()
         closing = []
 
         for stock in input.columns:
-            closing.append(web.DataReader(stock.upper(),'yahoo', self.start, self.end)['Adj Close'])
+            try:
+                closing.append(web.DataReader(stock.upper(),"yahoo", self.start, self.end)["Adj Close"])
+            except RemoteDataError:
+                raise Exception(f"The provided ticker {stock} not found from Yahoo.")
 
         df = pd.concat(closing,axis=1)
         df.columns = input.columns
@@ -86,7 +105,10 @@ class MonteCarlo:
         return self.plot(vol_arr,ret_arr,SR_arr,txt)
 
     def plot(self, x, y, z, title):
-    
+        """
+        Plotting the results.
+        :return: The plot outputted or saved in to a output destination.
+        """
         #Figure
         plt.figure(figsize=(16,12))
         plt.scatter(x,y,c=x,cmap='plasma')
@@ -122,4 +144,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     fw = MonteCarlo(args.file_name, args.time_frame, args.num_guess, args.output)
-    fw.run()
+    fw.main()
