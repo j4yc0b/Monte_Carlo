@@ -1,4 +1,3 @@
-# created by virtualenv automatically
 *.venv
 *test_input.csv
 *minimization.py
